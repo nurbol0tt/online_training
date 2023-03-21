@@ -1,6 +1,6 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Enum, Text, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, Boolean, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import relationship
-from enum import Enum as PyEnum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import DeclarativeBase
 
@@ -27,6 +27,16 @@ class User(TimestampMixin, Base):
     role = Column(Integer, ForeignKey('roles.id'))
 
     profile = relationship('Profile', back_populates="owner")
+
+    @classmethod
+    async def read_by_id(
+            cls, session: AsyncSession, user_id: int,
+    ):
+        query = select(User).where(User.id == user_id)
+        res = await session.execute(query)
+        user_row = res.fetchone()
+        if user_row is not None:
+            return user_row[0]
 
 
 class Profile(Base):
