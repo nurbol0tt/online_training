@@ -18,7 +18,8 @@ from app.service.user import (
     ReadUser,
     UpdateUser,
     DeleteUser,
-    ReadAllUser, LoginUser
+    ReadAllUser,
+    LoginUser
 )
 
 from app.utils.auth.oauth2 import get_current_user
@@ -57,7 +58,7 @@ async def read_all(
 
 @router.get("/{user_id}",
             response_model=ReadUserResponse,
-            status_code=status.HTTP_200_OK
+            status_code=status.HTTP_200_OK,
             )
 async def read(
         user_id: int,
@@ -75,6 +76,7 @@ async def update(
         data: UpdateUserRequest,
         user_id: int = Path(..., description=""),
         use_case: UpdateUser = Depends(UpdateUser),
+        current_user: CurrentUser = Depends(get_current_user)
 ) -> UserSchema:
     return await use_case.execute(user_id, name=data.name, email=data.email)
 
@@ -94,4 +96,3 @@ async def delete(
 async def auth(request: OAuth2PasswordRequestForm = Depends(),
                use_case: LoginUser = Depends(LoginUser)):
     return await use_case.execute(request)
-

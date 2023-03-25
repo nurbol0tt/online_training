@@ -6,6 +6,7 @@ from starlette import status
 
 from app.db.database import get_session
 from app.dto.application import UserSchema
+from app.dto.user import ReadUserResponse
 from app.repository.user import (
     UserCreateRepository,
     UserReadRepository,
@@ -23,8 +24,9 @@ class CreateNotebook:
 
     async def execute(self, data) -> UserSchema:
         async with self.async_session.begin() as session:
+
             user = await UserCreateRepository.create_user(
-                session, name=data.name, email=data.email,
+                session, name=data.name, email=data.email, role=data.role,
                 password=Hasher.get_password_hash(data.password)
             )
             return UserSchema.from_orm(user)
@@ -36,12 +38,12 @@ class ReadUser:
 
     async def execute(self, user_id: int) -> UserSchema:
         async with self.async_session() as session:
-            notebook = await UserReadRepository.read_by_id(
+            user = await UserReadRepository.read_by_id(
                 session, user_id, include_profile=True
             )
-            if not notebook:
+            if not user:
                 raise HTTPException(status_code=404)
-            return UserSchema.from_orm(notebook)
+            return ReadUserResponse.from_orm(user)
 
 
 class ReadAllUser:
@@ -97,3 +99,15 @@ class LoginUser:
                                     detail=f"Incorrect password")
             access_token = await create_access_token(data={"sub": request.username})
             return {"access_token": access_token, "token_type": "bearer"}
+
+
+# class UserGetEmail:
+#     def __init__(self, session: async_sessionmaker = Depends(get_session)) -> None:
+#         self.async_session = session
+#
+#     async def execute(self, username: str) -> None:
+#         async with self.async_session.begin() as session:
+#             user = await UserGetEmailRepository.read_by_id(session, username)
+#             if not user:
+#                 return
+#             await UserDeleteRepository.delete(session, user)

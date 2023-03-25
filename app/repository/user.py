@@ -18,8 +18,8 @@ class UserReadRepository:
         stmt = select(User).where(User.id == user_id)
 
         # If the `include_profile` flag is set, also retrieve the user's profile
-        if include_profile:
-            stmt = stmt.options(selectinload(User.profile))
+        # if include_profile:
+        #     stmt = stmt.options(selectinload(User.profile))
 
         # Execute the query and return the result
         # Note: The `order_by` clause sorts the result by ID in ascending order
@@ -35,13 +35,13 @@ class UserCreateRepository(UserReadRepository):
 
     @classmethod
     async def create_user(
-            cls, session: AsyncSession, email: str, name: str, password: str
+            cls, session: AsyncSession, email: str, name: str, password: str, role: int,
     ) -> User:
 
         if await cls.read_by_email(session, email):
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        user = User(name=name, email=email, password=password)
+        user = User(name=name, email=email,  password=password, role_id=role)
         session.add(user)
         await session.flush()
 
@@ -92,3 +92,20 @@ class UserLoginRepository(UserReadRepository):
     async def login(cls, session: AsyncSession, request):
         result = await session.execute(select(User).where(User.email == request.username))
         return result.scalar_one_or_none()
+
+
+class UserGetEmailRepository:
+
+    @classmethod
+    async def read_by_email(cls, session: AsyncSession, username: str) -> Optional[User]:
+        result = await session.execute(select(User).where(User.email == username))
+        return result.scalar_one_or_none()
+
+
+class UserGetRepository:
+
+    @classmethod
+    async def get_user_by_email(cls, session: AsyncSession, current_user2):
+        result = await session.execute(select(User).where(User.email == current_user2))
+        user = result.scalar_one_or_none()
+        return user.id
